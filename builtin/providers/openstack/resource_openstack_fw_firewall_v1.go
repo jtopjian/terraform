@@ -7,7 +7,7 @@ import (
 
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/fwaas/firewalls"
-	// "github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/fwaas/routerinsertion"
+	"github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/fwaas/routerinsertion"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -88,9 +88,10 @@ func resourceFWFirewallV1Create(d *schema.ResourceData, meta interface{}) error 
 		return fmt.Errorf("Error creating OpenStack networking client: %s", err)
 	}
 
-	adminStateUp := d.Get("admin_state_up").(bool)
+	var createOpts firewalls.CreateOptsBuilder
 
-	firewallCreateOpts := firewalls.CreateOpts{
+	adminStateUp := d.Get("admin_state_up").(bool)
+	createOpts = &firewalls.CreateOpts{
 		Name:         d.Get("name").(string),
 		Description:  d.Get("description").(string),
 		PolicyID:     d.Get("policy_id").(string),
@@ -98,45 +99,31 @@ func resourceFWFirewallV1Create(d *schema.ResourceData, meta interface{}) error 
 		TenantID:     d.Get("tenant_id").(string),
 	}
 
-	var firewallConfiguration firewalls.CreateOptsBuilder
-	var associatedRouters []string
-
 	associatedRoutersRaw := d.Get("associated_routers").(*schema.Set).List()
 	log.Printf("[DEBUG] associated_routers: %#v", associatedRoutersRaw)
 	log.Printf("[DEBUG] associated_routers count: %d", len(associatedRoutersRaw))
 	if len(associatedRoutersRaw) > 0 {
 		log.Printf("[DEBUG] Need to associate Firewall with router(s): %+v", associatedRoutersRaw)
 
-		associatedRouters := make([]string, len(associatedRoutersRaw))
-		for i, raw := range associatedRoutersRaw {
-			associatedRouters[i] = raw.(string)
+		var routerIds []string
+		for _, v := range associatedRoutersRaw {
+			routerIds = append(routerIds, v.(string))
 		}
 
-		// log.Printf("Initial firewallCreateOpts: %#v", firewallCreateOpts)
-		// firewallConfiguration = FirewallCreateOptsExt{
-		// 	routerinsertion.CreateOptsExt{
-		// 		firewallCreateOpts,
-		// 		associatedRouters,
-		// 	},
-		// 	MapValueSpecs(d),
-		// }
+		createOpts = &routerinsertion.CreateOptsExt{
+			createOpts,
+			routerIds,
+		}
 	}
-	// else {
-	// 	firewallConfiguration = FirewallCreateOpts{
-	// 		firewallCreateOpts,
-	// 		[]string{},
-	// 		MapValueSpecs(d),
-	// 	}
-	// }
-	firewallConfiguration = FirewallCreateOpts{
-		firewallCreateOpts,
-		associatedRouters,
+
+	createOpts = &FirewallCreateOpts{
+		createOpts,
 		MapValueSpecs(d),
 	}
 
-	log.Printf("[DEBUG] Create firewall: %#v", firewallConfiguration)
+	log.Printf("[DEBUG] Create firewall: %#v", createOpts)
 
-	firewall, err := firewalls.Create(networkingClient, firewallConfiguration).Extract()
+	firewall, err := firewalls.Create(networkingClient, createOpts).Extract()
 	if err != nil {
 		return err
 	}
@@ -201,9 +188,10 @@ func resourceFWFirewallV1Update(d *schema.ResourceData, meta interface{}) error 
 		return fmt.Errorf("Error creating OpenStack networking client: %s", err)
 	}
 
-	var opts FirewallUpdateOpts
 	// PolicyID is required
-	opts.PolicyID = d.Get("policy_id").(string)
+	opts := firewalls.UpdateOpts{
+		PolicyID: d.Get("policy_id").(string),
+	}
 
 	if d.HasChange("name") {
 		opts.Name = d.Get("name").(string)
@@ -220,25 +208,26 @@ func resourceFWFirewallV1Update(d *schema.ResourceData, meta interface{}) error 
 
 	log.Printf("[DEBUG] opts looks like: %#v", opts)
 
-	// var updateOpts firewalls.UpdateOptsBuilder
-	// updateOpts = opts
+	var updateOpts firewalls.UpdateOptsBuilder
+	var routerIds []string
 	if d.HasChange("associated_routers") {
 		log.Print("[DEBUG] 'associated_routers' has changed")
 		associatedRoutersRaw := d.Get("associated_routers").(*schema.Set).List()
-		associatedRouters := make([]string, len(associatedRoutersRaw))
-		for i, raw := range associatedRoutersRaw {
-			associatedRouters[i] = raw.(string)
+		for _, v := range associatedRoutersRaw {
+			routerIds = append(routerIds, v.(string))
 		}
-		opts.RouterIDs = associatedRouters
-		// 	updateOpts = routerinsertion.UpdateOptsExt{
-		// 		opts,
-		// 		associatedRouters,
-		// 	}
+
+		updateOpts = routerinsertion.UpdateOptsExt{
+			opts,
+			routerIds,
+		}
+	} else {
+		updateOpts = opts
 	}
 
-	log.Printf("[DEBUG] Updating firewall with id %s: %#v", d.Id(), opts)
+	log.Printf("[DEBUG] Updating firewall with id %s: %#v", d.Id(), updateOpts)
 
-	err = firewalls.Update(networkingClient, d.Id(), opts).Err
+	err = firewalls.Update(networkingClient, d.Id(), updateOpts).Err
 	if err != nil {
 		return err
 	}
