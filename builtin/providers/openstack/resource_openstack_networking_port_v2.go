@@ -238,6 +238,13 @@ func resourceNetworkingPortV2Update(d *schema.ResourceData, meta interface{}) er
 
 	var updateOpts ports.UpdateOpts
 
+	// security_group_ids and allowed_address_pairs are able to send empty arrays
+	// to denote the removal of each. But their default zero-value is translated
+	// to "null", which has been reported to cause problems in vendor-modified
+	// OpenStack clouds. Therefore, we must set them in each request update.
+	updateOpts.SecurityGroups = resourcePortSecurityGroupsV2(d)
+	updateOpts.AllowedAddressPairs = resourceAllowedAddressPairsV2(d)
+
 	if d.HasChange("name") {
 		updateOpts.Name = d.Get("name").(string)
 	}
@@ -250,20 +257,12 @@ func resourceNetworkingPortV2Update(d *schema.ResourceData, meta interface{}) er
 		updateOpts.DeviceOwner = d.Get("device_owner").(string)
 	}
 
-	if d.HasChange("security_group_ids") {
-		updateOpts.SecurityGroups = resourcePortSecurityGroupsV2(d)
-	}
-
 	if d.HasChange("device_id") {
 		updateOpts.DeviceID = d.Get("device_id").(string)
 	}
 
 	if d.HasChange("fixed_ip") {
 		updateOpts.FixedIPs = resourcePortFixedIpsV2(d)
-	}
-
-	if d.HasChange("allowed_address_pairs") {
-		updateOpts.AllowedAddressPairs = resourceAllowedAddressPairsV2(d)
 	}
 
 	log.Printf("[DEBUG] Updating Port %s with options: %+v", d.Id(), updateOpts)
@@ -329,21 +328,23 @@ func resourcePortFixedIpsV2(d *schema.ResourceData) interface{} {
 }
 
 func resourceAllowedAddressPairsV2(d *schema.ResourceData) []ports.AddressPair {
-	// ports.AddressPair
 	rawPairs := d.Get("allowed_address_pairs").(*schema.Set).List()
 
 	if len(rawPairs) == 0 {
-		return nil
+		return []ports.AddressPair{}
 	}
 
-	pairs := make([]ports.AddressPair, len(rawPairs))
-	for i, raw := range rawPairs {
-		rawMap := raw.(map[string]interface{})
-		pairs[i] = ports.AddressPair{
-			IPAddress:  rawMap["ip_address"].(string),
-			MACAddress: rawMap["mac_address"].(string),
+	var pairs []ports.AddressPair
+	for _, v := range rawPairs {
+		if v, ok := v.(map[string]interface{}); ok {
+			pair := ports.AddressPair{
+				IPAddress:  v["ip_address"].(string),
+				MACAddress: v["mac_address"].(string),
+			}
+			pairs = append(pairs, pair)
 		}
 	}
+
 	return pairs
 }
 
