@@ -1823,6 +1823,12 @@
 			"revisionTime": "2017-03-10T01:59:53Z"
 		},
 		{
+			"checksumSHA1": "z4Wpu5WejbJzYMztu8UlCR3riBA=",
+			"path": "github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/provider",
+			"revision": "5a6e13341e63bd202a0da558a2a7187720042676",
+			"revisionTime": "2017-05-22T01:35:44Z"
+		},
+		{
 			"checksumSHA1": "FKwSMrpQf7b3TcCOQfh+ovoBShA=",
 			"path": "github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/groups",
 			"revision": "0f64da0e36de86a0ca1a8f2fc1b0570a0d3f7504",
