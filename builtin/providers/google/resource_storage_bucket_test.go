@@ -68,16 +68,16 @@ func TestAccStorageStorageClass(t *testing.T) {
 		CheckDestroy: testAccGoogleStorageDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testGoogleStorageBucketsReaderStorageClass(bucketName, "STANDARD"),
+				Config: testGoogleStorageBucketsReaderStorageClass(bucketName, "MULTI_REGIONAL", ""),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStorageBucketExists(
 						"google_storage_bucket.bucket", bucketName),
 					resource.TestCheckResourceAttr(
-						"google_storage_bucket.bucket", "storage_class", "STANDARD"),
+						"google_storage_bucket.bucket", "storage_class", "MULTI_REGIONAL"),
 				),
 			},
 			{
-				Config: testGoogleStorageBucketsReaderStorageClass(bucketName, "NEARLINE"),
+				Config: testGoogleStorageBucketsReaderStorageClass(bucketName, "NEARLINE", ""),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStorageBucketExists(
 						"google_storage_bucket.bucket", bucketName),
@@ -86,12 +86,14 @@ func TestAccStorageStorageClass(t *testing.T) {
 				),
 			},
 			{
-				Config: testGoogleStorageBucketsReaderStorageClass(bucketName, "DURABLE_REDUCED_AVAILABILITY"),
+				Config: testGoogleStorageBucketsReaderStorageClass(bucketName, "REGIONAL", "US-CENTRAL1"),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckCloudStorageBucketExists(
 						"google_storage_bucket.bucket", bucketName),
 					resource.TestCheckResourceAttr(
-						"google_storage_bucket.bucket", "storage_class", "DURABLE_REDUCED_AVAILABILITY"),
+						"google_storage_bucket.bucket", "storage_class", "REGIONAL"),
+					resource.TestCheckResourceAttr(
+						"google_storage_bucket.bucket", "location", "US-CENTRAL1"),
 				),
 			},
 		},
@@ -129,6 +131,27 @@ func TestAccStorageBucketUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"google_storage_bucket.bucket", "force_destroy", "true"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccStorageBucketImport(t *testing.T) {
+	bucketName := fmt.Sprintf("tf-test-acl-bucket-%d", acctest.RandInt())
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccGoogleStorageDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testGoogleStorageBucketsReaderDefaults(bucketName),
+			},
+			resource.TestStep{
+				ResourceName:            "google_storage_bucket.bucket",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy"},
 			},
 		},
 	})
@@ -266,11 +289,16 @@ resource "google_storage_bucket" "bucket" {
 `, bucketName)
 }
 
-func testGoogleStorageBucketsReaderStorageClass(bucketName string, storageClass string) string {
+func testGoogleStorageBucketsReaderStorageClass(bucketName, storageClass, location string) string {
+	var locationBlock string
+	if location != "" {
+		locationBlock = fmt.Sprintf(`
+	location = "%s"`, location)
+	}
 	return fmt.Sprintf(`
 resource "google_storage_bucket" "bucket" {
 	name = "%s"
-	storage_class = "%s"
+	storage_class = "%s"%s
 }
-`, bucketName, storageClass)
+`, bucketName, storageClass, locationBlock)
 }
