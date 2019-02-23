@@ -9,12 +9,19 @@ import (
 	"time"
 
 	"github.com/gophercloud/gophercloud"
-	"github.com/gophercloud/gophercloud/openstack"
+	"github.com/gophercloud/utils/terraform/auth"
 
 	"github.com/hashicorp/terraform/backend"
 	"github.com/hashicorp/terraform/helper/schema"
-	tf_openstack "github.com/terraform-providers/terraform-provider-openstack/openstack"
 )
+
+// Type Config represents the configuration structure used
+// for authentication to a Swift remote backend.
+// It uses the Gophercloud utils Terraform auth Config as
+// a base/foundation.
+type Config struct {
+	auth.Config
+}
 
 // New creates a new backend for Swift remote state.
 func New() backend.Backend {
@@ -248,20 +255,22 @@ func (b *Backend) configure(ctx context.Context) error {
 	// Grab the resource data
 	data := schema.FromContextBackendConfig(ctx)
 
-	config := &tf_openstack.Config{
-		CACertFile:       data.Get("cacert_file").(string),
-		ClientCertFile:   data.Get("cert").(string),
-		ClientKeyFile:    data.Get("key").(string),
-		DomainID:         data.Get("domain_id").(string),
-		DomainName:       data.Get("domain_name").(string),
-		EndpointType:     data.Get("endpoint_type").(string),
-		IdentityEndpoint: data.Get("auth_url").(string),
-		Password:         data.Get("password").(string),
-		Token:            data.Get("token").(string),
-		TenantID:         data.Get("tenant_id").(string),
-		TenantName:       data.Get("tenant_name").(string),
-		Username:         data.Get("user_name").(string),
-		UserID:           data.Get("user_id").(string),
+	config := Config{
+		auth.Config{
+			CACertFile:       data.Get("cacert_file").(string),
+			ClientCertFile:   data.Get("cert").(string),
+			ClientKeyFile:    data.Get("key").(string),
+			DomainID:         data.Get("domain_id").(string),
+			DomainName:       data.Get("domain_name").(string),
+			EndpointType:     data.Get("endpoint_type").(string),
+			IdentityEndpoint: data.Get("auth_url").(string),
+			Password:         data.Get("password").(string),
+			Token:            data.Get("token").(string),
+			TenantID:         data.Get("tenant_id").(string),
+			TenantName:       data.Get("tenant_name").(string),
+			Username:         data.Get("user_name").(string),
+			UserID:           data.Get("user_id").(string),
+		},
 	}
 
 	if v, ok := data.GetOkExists("insecure"); ok {
@@ -316,9 +325,7 @@ func (b *Backend) configure(ctx context.Context) error {
 		b.expireSecs = int(expireDur.Seconds())
 	}
 
-	objClient, err := openstack.NewObjectStorageV1(config.OsClient, gophercloud.EndpointOpts{
-		Region: data.Get("region_name").(string),
-	})
+	objClient, err := config.ObjectStorageV1Client(data.Get("region_name").(string))
 	if err != nil {
 		return err
 	}
