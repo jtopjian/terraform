@@ -38,8 +38,8 @@ require (
 	github.com/golang/protobuf v1.2.0
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
 	github.com/google/go-cmp v0.2.0
-	github.com/gophercloud/gophercloud v0.0.0-20190208042652-bc37892e1968
-	github.com/gophercloud/utils v0.0.0-20190128072930-fbb6ab446f01 // indirect
+	github.com/gophercloud/gophercloud v0.0.0-20190212181753-892256c46858
+	github.com/gophercloud/utils v0.0.0-20190223031740-003f6f5724a5
 	github.com/gorilla/websocket v1.4.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
@@ -60,7 +60,7 @@ require (
 	github.com/hashicorp/go-rootcerts v1.0.0
 	github.com/hashicorp/go-sockaddr v0.0.0-20180320115054-6d291a969b86 // indirect
 	github.com/hashicorp/go-tfe v0.3.8
-	github.com/hashicorp/go-uuid v1.0.0
+	github.com/hashicorp/go-uuid v1.0.1
 	github.com/hashicorp/go-version v1.1.0
 	github.com/hashicorp/golang-lru v0.5.0 // indirect
 	github.com/hashicorp/hcl v0.0.0-20170504190234-a4b07c25de5f
@@ -87,7 +87,7 @@ require (
 	github.com/mitchellh/cli v1.0.0
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/mitchellh/copystructure v1.0.0
-	github.com/mitchellh/go-homedir v1.0.0
+	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/go-linereader v0.0.0-20190213213312-1b945b3263eb
 	github.com/mitchellh/go-wordwrap v1.0.0
 	github.com/mitchellh/hashstructure v1.0.0
@@ -107,7 +107,7 @@ require (
 	github.com/smartystreets/goconvey v0.0.0-20180222194500-ef6db91d284a // indirect
 	github.com/soheilhy/cmux v0.1.4 // indirect
 	github.com/spf13/afero v1.2.1
-	github.com/terraform-providers/terraform-provider-openstack v1.15.0
+	github.com/terraform-providers/terraform-provider-openstack v1.15.0 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20171017195756-830351dc03c6 // indirect
 	github.com/ugorji/go v0.0.0-20180813092308-00b869d2f4a5 // indirect
 	github.com/vmihailenco/msgpack v4.0.1+incompatible // indirect
